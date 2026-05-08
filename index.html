@@ -271,7 +271,7 @@ async function generateQR(){
 
     qrContainer.style.display = "none";
 
-    // VALIDATION
+    // EMPTY CHECK
     if(link === ""){
 
         message.innerText =
@@ -296,7 +296,7 @@ async function generateQR(){
     try{
 
         const response = await fetch(
-            "/generate_qr",
+            "https://pattimanim-qr-generator.hf.space/generate_qr",
             {
                 method:"POST",
 
@@ -310,7 +310,7 @@ async function generateQR(){
             }
         );
 
-        // HANDLE SERVER ERROR
+        // SERVER ERROR
         if(!response.ok){
 
             message.innerText =
