@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8"/>
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+/>
+
+<title>QR Generator</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+
+  background:#3C3E63;
+
+  font-family:Arial;
+
+  min-height:100vh;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  padding:20px;
+}
+
+.container{
+
+  width:100%;
+  max-width:500px;
+
+  background:#2E3050;
+
+  padding:30px;
+
+  border-radius:20px;
+
+  text-align:center;
+
+  box-shadow:0px 0px 20px rgba(0,0,0,0.3);
+}
+
+h1{
+  color:white;
+  margin-bottom:25px;
+  font-size:42px;
+}
+
+input{
+
+  width:100%;
+
+  padding:14px;
+
+  border:none;
+
+  border-radius:12px;
+
+  font-size:16px;
+
+  margin-bottom:20px;
+
+  outline:none;
+}
+
+button{
+
+  background:#16DBA6;
+
+  color:black;
+
+  border:none;
+
+  padding:14px 28px;
+
+  border-radius:12px;
+
+  font-size:18px;
+
+  font-weight:bold;
+
+  cursor:pointer;
+
+  transition:0.3s;
+}
+
+button:hover{
+  transform:scale(1.03);
+}
+
+#qrContainer{
+
+  margin-top:30px;
+
+  display:none;
+
+  flex-direction:column;
+
+  align-items:center;
+}
+
+#qrImage{
+
+  width:250px;
+
+  max-width:100%;
+
+  border-radius:15px;
+
+  background:white;
+
+  padding:10px;
+}
+
+#saveBtn{
+
+  margin-top:20px;
+
+  text-decoration:none;
+
+  background:#F54927;
+
+  color:white;
+
+  padding:12px 25px;
+
+  border-radius:12px;
+
+  font-weight:bold;
+
+  transition:0.3s;
+}
+
+#saveBtn:hover{
+  opacity:0.9;
+}
+
+/* MESSAGE */
+
+#message{
+
+  margin-top:20px;
+
+  color:#ffb3b3;
+
+  font-size:15px;
+
+  display:none;
+}
+
+/* SUBSCRIBE LINK */
+
+.subscribe{
+
+  margin-top:25px;
+
+  display:block;
+
+  color:#16DBA6;
+
+  text-decoration:none;
+
+  font-size:18px;
+
+  font-weight:bold;
+}
+
+.subscribe:hover{
+  text-decoration:underline;
+}
+
+/* MOBILE */
+
+@media(max-width:600px){
+
+  h1{
+    font-size:32px;
+  }
+
+  button{
+    width:100%;
+  }
+
+  #qrImage{
+    width:220px;
+  }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>QR Generator</h1>
+
+  <input
+    type="text"
+    id="linkInput"
+
+    placeholder="Paste your HTTPS link here..."
+  />
+
+  <button onclick="generateQR()">
+    Generate QR
+  </button>
+
+  <!-- ERROR MESSAGE -->
+
+  <div id="message"></div>
+
+  <!-- QR -->
+
+  <div id="qrContainer">
+
+    <img id="qrImage"/>
+
+    <!-- SAVE BUTTON -->
+
+    <a
+      id="saveBtn"
+      download="generated_qr.png"
+    >
+      Save QR
+    </a>
+
+  </div>
+
+  <!-- SUBSCRIBE LINK -->
+
+  <a
+    class="subscribe"
+
+    href="https://www.youtube.com/@DevCinema-y6d"
+
+    target="_blank"
+  >
+    🔥 Subscribe To My Channel
+  </a>
+
+</div>
+
+<script>
+
+async function generateQR(){
+
+    const link =
+    document.getElementById("linkInput").value.trim();
+
+    const message =
+    document.getElementById("message");
+
+    const qrContainer =
+    document.getElementById("qrContainer");
+
+    // RESET
+    message.style.display = "none";
+
+    qrContainer.style.display = "none";
+
+    // VALIDATION
+    if(link === ""){
+
+        message.innerText =
+        "Please enter a link.";
+
+        message.style.display = "block";
+
+        return;
+    }
+
+    // HTTPS CHECK
+    if(!link.startsWith("https://")){
+
+        message.innerText =
+        "Only HTTPS links are allowed.";
+
+        message.style.display = "block";
+
+        return;
+    }
+
+    try{
+
+        const response = await fetch(
+            "/generate_qr",
+            {
+                method:"POST",
+
+                headers:{
+                    "Content-Type":"application/json"
+                },
+
+                body:JSON.stringify({
+                    link:link
+                })
+            }
+        );
+
+        // HANDLE SERVER ERROR
+        if(!response.ok){
+
+            message.innerText =
+            "QR generation failed.";
+
+            message.style.display = "block";
+
+            return;
+        }
+
+        const blob =
+        await response.blob();
+
+        const imageUrl =
+        URL.createObjectURL(blob);
+
+        // QR IMAGE
+        const img =
+        document.getElementById("qrImage");
+
+        img.src = imageUrl;
+
+        // SAVE BUTTON
+        const saveBtn =
+        document.getElementById("saveBtn");
+
+        saveBtn.href = imageUrl;
+
+        // SHOW QR
+        qrContainer.style.display = "flex";
+
+    }
+
+    catch(error){
+
+        message.innerText =
+        "Server connection failed.";
+
+        message.style.display = "block";
+    }
+}
+
+</script>
+
+</body>
+</html>
