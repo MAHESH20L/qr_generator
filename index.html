@@ -12,6 +12,13 @@ content="width=device-width, initial-scale=1.0"
 
 <title>QR Generator</title>
 
+<!-- CLOUDFLARE TURNSTILE -->
+
+<script
+src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+async defer>
+</script>
+
 <style>
 
 *{
@@ -52,8 +59,11 @@ body{
 }
 
 h1{
+
   color:white;
+
   margin-bottom:25px;
+
   font-size:42px;
 }
 
@@ -96,7 +106,15 @@ button{
 }
 
 button:hover{
+
   transform:scale(1.03);
+}
+
+button:disabled{
+
+  opacity:0.7;
+
+  cursor:not-allowed;
 }
 
 #qrContainer{
@@ -143,6 +161,7 @@ button:hover{
 }
 
 #saveBtn:hover{
+
   opacity:0.9;
 }
 
@@ -157,6 +176,19 @@ button:hover{
   font-size:15px;
 
   display:none;
+
+  line-height:1.5;
+}
+
+/* CAPTCHA */
+
+.cf-turnstile{
+
+  margin-top:10px;
+
+  display:flex;
+
+  justify-content:center;
 }
 
 /* SUBSCRIBE LINK */
@@ -177,12 +209,17 @@ button:hover{
 }
 
 .subscribe:hover{
+
   text-decoration:underline;
 }
 
 /* MOBILE */
 
 @media(max-width:600px){
+
+  .container{
+    padding:22px;
+  }
 
   h1{
     font-size:32px;
@@ -210,11 +247,20 @@ button:hover{
   <input
     type="text"
     id="linkInput"
-
+    maxlength="500"
     placeholder="Paste your HTTPS link here..."
   />
 
-  <button onclick="generateQR()">
+  <!-- CLOUDFLARE CAPTCHA -->
+
+  <div
+    class="cf-turnstile"
+    data-sitekey="0x4AAAAAADL5yEqRhFR6zHw0">
+  </div>
+
+  <button
+    id="generateBtn"
+    onclick="generateQR()">
     Generate QR
   </button>
 
@@ -243,10 +289,9 @@ button:hover{
 
   <a
     class="subscribe"
-
     href="https://www.youtube.com/@DevCinema-y6d"
-
     target="_blank"
+    rel="noopener noreferrer"
   >
     🔥 Subscribe To My Channel
   </a>
@@ -255,10 +300,21 @@ button:hover{
 
 <script>
 
+let isGenerating = false;
+
 async function generateQR(){
 
+    // PREVENT SPAM CLICKING
+
+    if(isGenerating) return;
+
+    const generateBtn =
+    document.getElementById("generateBtn");
+
     const link =
-    document.getElementById("linkInput").value.trim();
+    document.getElementById("linkInput")
+    .value
+    .trim();
 
     const message =
     document.getElementById("message");
@@ -267,11 +323,13 @@ async function generateQR(){
     document.getElementById("qrContainer");
 
     // RESET
+
     message.style.display = "none";
 
     qrContainer.style.display = "none";
 
     // EMPTY CHECK
+
     if(link === ""){
 
         message.innerText =
@@ -282,7 +340,20 @@ async function generateQR(){
         return;
     }
 
+    // LENGTH LIMIT
+
+    if(link.length > 500){
+
+        message.innerText =
+        "Input too long.";
+
+        message.style.display = "block";
+
+        return;
+    }
+
     // HTTPS CHECK
+
     if(!link.startsWith("https://")){
 
         message.innerText =
@@ -293,11 +364,38 @@ async function generateQR(){
         return;
     }
 
+    // CAPTCHA TOKEN
+
+    const captchaToken =
+    document.querySelector(
+      '[name=\"cf-turnstile-response\"]'
+    )?.value;
+
+    if(!captchaToken){
+
+        message.innerText =
+        "Please complete CAPTCHA.";
+
+        message.style.display = "block";
+
+        return;
+    }
+
     try{
 
+        isGenerating = true;
+
+        generateBtn.disabled = true;
+
+        generateBtn.innerText =
+        "Generating...";
+
         const response = await fetch(
+
             "https://pattimanim-qr-generator.hf.space/generate_qr",
+
             {
+
                 method:"POST",
 
                 headers:{
@@ -305,15 +403,24 @@ async function generateQR(){
                 },
 
                 body:JSON.stringify({
-                    link:link
+
+                    link:link,
+
+                    "cf-turnstile-response":
+                    captchaToken
                 })
             }
         );
 
         // SERVER ERROR
+
         if(!response.ok){
 
+            const errorData =
+            await response.json();
+
             message.innerText =
+            errorData.error ||
             "QR generation failed.";
 
             message.style.display = "block";
@@ -328,20 +435,29 @@ async function generateQR(){
         URL.createObjectURL(blob);
 
         // QR IMAGE
+
         const img =
         document.getElementById("qrImage");
 
         img.src = imageUrl;
 
         // SAVE BUTTON
+
         const saveBtn =
         document.getElementById("saveBtn");
 
         saveBtn.href = imageUrl;
 
         // SHOW QR
+
         qrContainer.style.display = "flex";
 
+        // RESET CAPTCHA
+
+        if(window.turnstile){
+
+            turnstile.reset();
+        }
     }
 
     catch(error){
@@ -351,9 +467,20 @@ async function generateQR(){
 
         message.style.display = "block";
     }
+
+    finally{
+
+        isGenerating = false;
+
+        generateBtn.disabled = false;
+
+        generateBtn.innerText =
+        "Generate QR";
+    }
 }
 
 </script>
 
 </body>
+
 </html>
